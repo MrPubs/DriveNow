@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv/
+venv/
+env/
+ENV/
+*.sqlite3
+
+# Pycharm / VSCode
+.idea/
+.vscode/
+
+# Byte-compiled / logs
+*.log
+*.pot
+*.mo
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Docker
+*.dockerfile
+docker-compose.override.yml
+*.pid
+*.sock
+
+# Migrations
+alembic/versions/*.pyc
+*.db
+*.sqlite
+
+# RabbitMQ / message queues
+*.queue
+*.mq
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Other
+*.swp
+*.DS_Store
