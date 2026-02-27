@@ -25,15 +25,7 @@ class CarService:
 
         result = await db.execute(query)
         car_orm = result.scalar_one_or_none()
-        car = Car(
-                id=car_orm.id,
-                model=CarModel(
-                    company=car_orm.company,
-                    name=car_orm.name,
-                    year=car_orm.year
-                ),
-                status=RentalStatus(status=car_orm.status)
-        )
+        car = Car.from_orm(car_orm)
         return car
 
     @staticmethod
