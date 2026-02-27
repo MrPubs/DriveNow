@@ -58,6 +58,18 @@ class Car(BaseModel):
             status=self.status.status  # convert RentalStatus BaseModel to string
         )
 
+    def update_from_req(self, update_req: "CarUpdateReq") -> None:
+        data = update_req.model_dump(exclude_unset=True)
+
+        # Update the nested model if present
+        if "model" in data:
+            for k, v in data["model"].items():
+                setattr(self.model, k, v)
+
+        # Update status if present
+        if "status" in data:
+            self.status.status = data["status"]["status"]
+
 CarUpdateReq = create_model(
     'CarUpdateReq',
     **{k: (Optional[v], None) for k, v in Car.__annotations__.items() if k != "id"}

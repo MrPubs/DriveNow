@@ -1,6 +1,7 @@
 
 # Response
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 
 # Models and types
 from uuid import UUID
@@ -64,7 +65,51 @@ class CarService:
 
     @staticmethod
     async def update_one_by_id(db: AsyncSession, id: UUID, update_req: CarUpdateReq):
-        return
+
+        # Fetch existing car
+        query = select(CarTableSchema).where(CarTableSchema.id == id)
+        result = await db.execute(query)
+        car_orm = result.scalar_one_or_none()
+
+        # no record to update!
+        if not car_orm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Car with id {id} not found."
+            )
+
+        # Apply updates from CarUpdateReq
+        car = Car.from_orm(car_orm)
+        car.update_from_req(update_req)
+
+        # Push back to ORM for update only if changes made
+        changed = False
+        updated_orm = car.to_orm()
+        for field in ['company', 'name', 'year', 'status']:
+            new_value = getattr(updated_orm, field)
+            old_value = getattr(car_orm, field)
+            if new_value != old_value:
+                setattr(car_orm, field, new_value)
+                changed = True
+
+
+        # Try to update
+        if changed:
+            try:
+                await db.commit()
+                await db.refresh(car_orm)
+            except IntegrityError:
+                await db.rollback()
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Update caused conflict"
+                )
+
+            # Return updated car
+            return Car.from_orm(car_orm)
+
+        else:
+            return car # no update!
 
     @staticmethod
     async def delete_one_by_id(db: AsyncSession, id: UUID):
