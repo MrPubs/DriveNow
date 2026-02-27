@@ -6,15 +6,24 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import ForeignKey
 
+from sqlalchemy.orm import Mapped, mapped_column
+from uuid import UUID as uuid_UUID
+
+
 Base = declarative_base()
 
 class CarTableSchema(Base):
     __tablename__ = "cars"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company = Column(String, nullable=False)
-    name = Column(String, nullable=False)
-    year = Column(Integer, nullable=False)
-    status = Column(String, nullable=False)
+
+    id: Mapped[uuid_UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    company: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
 
 class RentalTableSchema(Base):
     __tablename__ = "rentals"

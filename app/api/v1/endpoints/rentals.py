@@ -1,7 +1,7 @@
 
 # Deps
 from fastapi import APIRouter, status
-router = APIRouter(prefix="/rentals", tags=["rentals"])
+router = APIRouter(prefix="/rentals", tags=["Rentals"])
 
 # Models
 from uuid import UUID
@@ -12,13 +12,17 @@ from typing import List
 from datetime import datetime
 from uuid import uuid4
 
+# Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db_session
+
 # TODO: Remove!
 test = Rental(id=uuid4(),
                     car_id=uuid4(),
                     customer_name="Alice Johnson",
                     start_date=datetime(2026, 2, 26, 16, 30),
                     end_date=datetime(2026, 2, 28, 10, 0)
-                )
+)
 
 # GET ------------------
 # Get a rental by id
@@ -36,9 +40,9 @@ async def get_all_rentals():
 
 
 # POST ------------------
-# Add a rental
+# Add a new rental
 @router.post("/", response_model=Rental, status_code=status.HTTP_201_CREATED)
-async def add_rental(rental: Rental):
+async def start_rental(rental: Rental):
 
     rental = test
     return rental
@@ -47,7 +51,7 @@ async def add_rental(rental: Rental):
 # PATCH ----------------
 # Update rental based on id
 @router.patch("/{rental_id}", response_model=Rental, status_code=status.HTTP_200_OK)
-async def update_rental_by_id(rental_id: UUID, rental: RentalUpdateReq):
+async def update_rental_by_id(rental_id: UUID, update_req: RentalUpdateReq):
 
     rental = test
     return rental
