@@ -1,3 +1,7 @@
+
+# Response
+from fastapi import HTTPException, status
+
 # Models and types
 from uuid import UUID
 from app.models.validations.items import CarUpdateReq, RentalStatusEnum, Car, RentalStatus, CarModel
@@ -43,24 +47,33 @@ class CarService:
         # Send Query and return
         result = await db.execute(query)
         cars_orm = result.scalars().all()
-        cars = [
-            Car(
-                id=c.id,
-                model=CarModel(
-                    company=c.company,
-                    name=c.name,
-                    year=c.year
-                ),
-                status=RentalStatus(status=c.status)
-            ) for c in cars_orm
-        ]
-
+        cars = [Car.from_orm(c) for c in cars_orm]
         return cars
 
     @staticmethod
+    async def add_one(db: AsyncSession, car: Car):
+
+        # Convert Pydantic model to ORM
+        car_orm = car.to_orm()
+
+        # Add record to session
+        db.add(car_orm)
+        try:
+            await db.commit() # Commit transaction
+            await db.refresh(car_orm) # Refresh to get any defaults from DB
+        except Exception:
+            # Rollback on error
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Car with id {car.id} already exists."
+            )
+        return Car.from_orm(car_orm)
+
+    @staticmethod
     async def update_one_by_id(db: AsyncSession, id: UUID, update_req: CarUpdateReq):
-        pass
+        return
 
     @staticmethod
     async def delete_one_by_id(db: AsyncSession, id: UUID):
-        pass
+        return

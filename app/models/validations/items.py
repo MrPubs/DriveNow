@@ -6,6 +6,8 @@ from enum import Enum
 from uuid import UUID
 from datetime import datetime
 
+# Schemas
+from ..orm import CarTableSchema
 
 class RentalStatus(BaseModel):
     status: Literal["available", "in use", "under maintenance"]
@@ -26,6 +28,36 @@ class Car(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+    @classmethod
+    def from_orm(cls, orm_obj: CarTableSchema) -> "Car":
+        """
+        Converts an ORM object to a nested Pydantic Car model.
+        """
+        return cls.model_validate({
+            "id": orm_obj.id,
+            "model": {
+                "company": orm_obj.company,
+                "name": orm_obj.name,
+                "year": orm_obj.year
+            },
+            "status": {
+                "status": orm_obj.status
+            }
+        })
+
+    def to_orm(self) -> CarTableSchema:
+        """
+        Converts a nested Pydantic Car model to an ORM object
+        """
+        return CarTableSchema(
+            id=self.id,
+            company=self.model.company,
+            name=self.model.name,
+            year=self.model.year,
+            status=self.status.status  # convert RentalStatus BaseModel to string
+        )
+
 CarUpdateReq = create_model(
     'CarUpdateReq',
     **{k: (Optional[v], None) for k, v in Car.__annotations__.items() if k != "id"}

@@ -48,7 +48,8 @@ async def get_all_cars(status_filter: Optional[RentalStatusEnum] = Query(None, d
 async def add_car(car: Car,
                   db: AsyncSession = Depends(get_db_session)):
 
-    car = car
+    new_car = await CarService.add_one(db=db, car=car)
+    print("yahahahah")
     return car
 
 
@@ -58,8 +59,8 @@ async def add_car(car: Car,
 async def update_car_by_id(car_id: UUID, update_req: CarUpdateReq,
                            db: AsyncSession = Depends(get_db_session)):
 
-    car = test
-    return car
+    patched_car = await CarService.update_one_by_id(db=db, id=car_id, update_req=update_req)
+    return patched_car
 
 
 # DELETE --------------
@@ -67,5 +68,7 @@ async def update_car_by_id(car_id: UUID, update_req: CarUpdateReq,
 @router.delete("/{car_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_car_by_id(car_id: UUID,
                            db: AsyncSession = Depends(get_db_session)):
+
+    successfully_deleted = await CarService.update_one_by_id(db=db, id=car_id)
     return None
 
