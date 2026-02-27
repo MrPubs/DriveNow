@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 # Models and types
+from typing import List
 from uuid import UUID
 from app.models.validations.items import CarUpdateReq, RentalStatusEnum, Car, RentalStatus, CarModel
 
@@ -30,7 +31,7 @@ class CarService:
         return car
 
     @staticmethod
-    async def get_all(db: AsyncSession, status_filter: RentalStatusEnum | None = None):
+    async def get_all(db: AsyncSession, status_filter: RentalStatusEnum | None = None) -> List[Car]:
 
         # Make Query
         query = select(CarTableSchema)
@@ -44,7 +45,7 @@ class CarService:
         return cars
 
     @staticmethod
-    async def add_one(db: AsyncSession, car: Car):
+    async def add_one(db: AsyncSession, car: Car) -> Car:
 
         # Convert Pydantic model to ORM
         car_orm = car.to_orm()
@@ -64,7 +65,7 @@ class CarService:
         return Car.from_orm(car_orm)
 
     @staticmethod
-    async def update_one_by_id(db: AsyncSession, id: UUID, update_req: CarUpdateReq):
+    async def update_one_by_id(db: AsyncSession, id: UUID, update_req: CarUpdateReq) -> Car:
 
         # Fetch existing car
         query = select(CarTableSchema).where(CarTableSchema.id == id)
@@ -92,7 +93,6 @@ class CarService:
                 setattr(car_orm, field, new_value)
                 changed = True
 
-
         # Try to update
         if changed:
             try:
@@ -112,5 +112,37 @@ class CarService:
             return car # no update!
 
     @staticmethod
-    async def delete_one_by_id(db: AsyncSession, id: UUID):
+    async def delete_one_by_id(db: AsyncSession, id: UUID) -> None:
+
+        # Fetch the existing record
+        query = select(CarTableSchema).where(CarTableSchema.id == id)
+        result = await db.execute(query)
+        car_orm = result.scalar_one_or_none()
+
+        # no record exists
+        if not car_orm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Car with id {id} not found."
+            )
+
+        # Delete record
+        try:
+            await db.delete(car_orm)
+            await db.commit()
+
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Cannot delete car {id} due to database constraints."
+            )
+
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Unexpected error occurred while deleting car {id}."
+            )
+
         return

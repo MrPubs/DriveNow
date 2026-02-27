@@ -69,6 +69,6 @@ async def update_car_by_id(car_id: UUID, update_req: CarUpdateReq,
 async def delete_car_by_id(car_id: UUID,
                            db: AsyncSession = Depends(get_db_session)):
 
-    successfully_deleted = await CarService.update_one_by_id(db=db, id=car_id)
+    await CarService.delete_one_by_id(db=db, id=car_id)
     return None
 
