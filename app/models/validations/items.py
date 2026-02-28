@@ -1,6 +1,6 @@
 
 # Types
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, create_model, model_validator
 from typing import Optional, Literal
 from enum import Enum
 from uuid import UUID
@@ -87,6 +87,12 @@ class Rental(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.end_date <= self.start_date:
+            raise ValueError("end_date must be later than start_date")
+        return self
 
     @classmethod
     def from_orm(cls, orm_obj: RentalTableSchema) -> "Rental":
