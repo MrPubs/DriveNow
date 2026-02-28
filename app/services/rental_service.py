@@ -15,6 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Query
 from sqlalchemy import select
 
+# Observability
+from ..core.logger import logger
+
 class RentalService:
 
     @staticmethod
@@ -26,6 +29,7 @@ class RentalService:
         result = await db.execute(query)
         rental_orm = result.scalar_one_or_none()
         if not rental_orm:
+            logger.warning(f"Rental with id {rental_id} not found.")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Rental with id {rental_id} not found."
@@ -44,12 +48,15 @@ class RentalService:
         result = await db.execute(query)
         rentals_orm = result.scalars().all()
         rentals = [Rental.from_orm(r) for r in rentals_orm if r is not None]
+
+        if not rentals:
+            logger.warning("No Rentals found!")
         return rentals
 
     @staticmethod
     async def add_one(db: AsyncSession, rental: Rental) -> Rental:
 
-        async with db.begin(): # requires atomic operation since contains read&write operation
+        async with db.begin():
 
             # rental to create
             rental_orm = rental.to_orm()
@@ -63,12 +70,14 @@ class RentalService:
             car = result.scalar_one_or_none()
 
             if not car:
+                logger.warning(f"Car {rental_orm.car_id} not found")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Car {rental_orm.car_id} not found"
                 )
 
             if car.status != RentalStatusEnum.available.value:
+                logger.warning("Car is not available")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Car is not available"
@@ -77,6 +86,9 @@ class RentalService:
             # Set in use if available ( if in maintenance, no authority to determine its fixed.. )
             if car.status == RentalStatusEnum.available.value:
                 car.status = RentalStatusEnum.in_use.value
+            else:
+                logger.warning("Tried renting a Car that's not available - Rental made but car needs to be fixed before rental")
+                # TODO: here would be a good area to add a message queue integration to produce an event to fix a car before rental, consumed by a different service
 
             # add rental
             db.add(rental_orm)
@@ -92,7 +104,11 @@ class RentalService:
             result = await db.execute(select(RentalTableSchema).where(RentalTableSchema.id == rental_id))
             rental_orm: RentalTableSchema = result.scalar_one_or_none()
             if not rental_orm:
-                raise HTTPException(status_code=404, detail=f"Rental {rental_id} not found.")
+                logger.warning(f"Rental {rental_id} not found.")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Rental {rental_id} not found."
+                )
 
             # Fetch car
             result = await db.execute(
@@ -105,9 +121,8 @@ class RentalService:
             # Update car status if needed
             if car and car.status == RentalStatusEnum.in_use.value:
                 car.status = RentalStatusEnum.available.value
+                logger.info(f"Deleted Rental with id: {rental_id}, and set Car with id: {car.id} to status: {car.status}")
 
             # Delete rental
             await db.delete(rental_orm)
-
-        # Commit handled by async with db.begin()
         return

@@ -1,6 +1,7 @@
 
 # API Deps
 from fastapi import APIRouter, Depends, HTTPException, status
+router = APIRouter(prefix="/health", tags=["Health"])
 
 # Session
 from sqlalchemy import text
@@ -8,7 +9,6 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 
-router = APIRouter(prefix="/health", tags=["Health"])
 
 @router.get("/health/ping")
 def ping():

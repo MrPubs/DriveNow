@@ -17,6 +17,9 @@ from app.models.orm import CarTableSchema, deep_update_orm
 # Query
 from sqlalchemy import select
 
+# Observability
+from ..core.logger import logger
+
 class CarService:
 
     @staticmethod
@@ -28,6 +31,7 @@ class CarService:
         result = await db.execute(query)
         car_orm = result.scalar_one_or_none()
         if not car_orm:
+            logger.warning(f"Car with id {car_id} not found in database")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Car with id {car_id} not found."
@@ -47,6 +51,9 @@ class CarService:
         result = await db.execute(query)
         cars_orm = result.scalars().all()
         cars = [Car.from_orm(c) for c in cars_orm if c is not None]
+
+        if not cars:
+            logger.warning("No Cars match query!")
         return cars
 
     @staticmethod
@@ -63,6 +70,7 @@ class CarService:
         except Exception:
             # Rollback on error
             await db.rollback()
+            logger.warning(f"Car with id {car.id} already exists.")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Car with id {car.id} already exists."
@@ -79,6 +87,7 @@ class CarService:
 
         # no record to update!
         if not car_orm:
+            logger.warning(f"Car with id {car_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Car with id {car_id} not found."
@@ -99,6 +108,7 @@ class CarService:
                 await db.refresh(car_orm)
             except IntegrityError:
                 await db.rollback()
+                logger.warning("Update caused conflict.")
                 raise HTTPException(
                     status_code=409,
                     detail=f"Update caused conflict."
@@ -108,6 +118,7 @@ class CarService:
             return Car.from_orm(car_orm)
 
         else:
+            logger.warning("Nothing in request requires updating existing value - skipping set query")
             return car # no update!
 
     @staticmethod
@@ -120,6 +131,7 @@ class CarService:
 
         # no record exists
         if not car_orm:
+            logger.warning(f"Car with id {car_id} not found.")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Car with id {car_id} not found."
@@ -132,6 +144,7 @@ class CarService:
 
         except IntegrityError:
             await db.rollback()
+            logger.warning(f"Cannot delete car {car_id} due to database constraints.")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Cannot delete car {car_id} due to database constraints."
@@ -139,6 +152,7 @@ class CarService:
 
         except Exception as e:
             await db.rollback()
+            logger.warning(f"Unexpected error occurred while deleting car {car_id}.")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error occurred while deleting car {car_id}."
