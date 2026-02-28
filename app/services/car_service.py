@@ -3,30 +3,35 @@
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-# Models and types
+# Models and Types
 from typing import List
 from uuid import UUID
-from app.models.validations.items import CarUpdateReq, RentalStatusEnum, Car, RentalStatus, CarModel
+from app.models.validations.items import CarUpdateReq, RentalStatusEnum, Car
 
 # Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Schemas
-from app.models.orm import CarTableSchema
+from app.models.orm import CarTableSchema, deep_update_orm
 
-# Functionality
+# Query
 from sqlalchemy import select
 
 class CarService:
 
     @staticmethod
-    async def get_one_by_id(db: AsyncSession, id: UUID):
+    async def get_one_by_id(db: AsyncSession, car_id: UUID):
 
         # Make Query
-        query = select(CarTableSchema).where(CarTableSchema.id == id)
+        query = select(CarTableSchema).where(CarTableSchema.id == car_id)
 
         result = await db.execute(query)
         car_orm = result.scalar_one_or_none()
+        if not car_orm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Car with id {car_id} not found."
+            )
         car = Car.from_orm(car_orm)
         return car
 
@@ -41,7 +46,7 @@ class CarService:
         # Send Query and return
         result = await db.execute(query)
         cars_orm = result.scalars().all()
-        cars = [Car.from_orm(c) for c in cars_orm]
+        cars = [Car.from_orm(c) for c in cars_orm if c is not None]
         return cars
 
     @staticmethod
@@ -62,13 +67,13 @@ class CarService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Car with id {car.id} already exists."
             )
-        return Car.from_orm(car_orm)
+        return car
 
     @staticmethod
-    async def update_one_by_id(db: AsyncSession, id: UUID, update_req: CarUpdateReq) -> Car:
+    async def update_one_by_id(db: AsyncSession, car_id: UUID, update_req: CarUpdateReq) -> Car:
 
         # Fetch existing car
-        query = select(CarTableSchema).where(CarTableSchema.id == id)
+        query = select(CarTableSchema).where(CarTableSchema.id == car_id)
         result = await db.execute(query)
         car_orm = result.scalar_one_or_none()
 
@@ -76,22 +81,16 @@ class CarService:
         if not car_orm:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Car with id {id} not found."
+                detail=f"Car with id {car_id} not found."
             )
 
         # Apply updates from CarUpdateReq
         car = Car.from_orm(car_orm)
-        car.update_from_req(update_req)
+        car.reconcile_req_diff(update_req)
 
         # Push back to ORM for update only if changes made
-        changed = False
         updated_orm = car.to_orm()
-        for field in ['company', 'name', 'year', 'status']:
-            new_value = getattr(updated_orm, field)
-            old_value = getattr(car_orm, field)
-            if new_value != old_value:
-                setattr(car_orm, field, new_value)
-                changed = True
+        changed = deep_update_orm(car_orm, updated_orm)
 
         # Try to update
         if changed:
@@ -102,7 +101,7 @@ class CarService:
                 await db.rollback()
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Update caused conflict"
+                    detail=f"Update caused conflict."
                 )
 
             # Return updated car
@@ -112,10 +111,10 @@ class CarService:
             return car # no update!
 
     @staticmethod
-    async def delete_one_by_id(db: AsyncSession, id: UUID) -> None:
+    async def delete_one_by_id(db: AsyncSession, car_id: UUID) -> None:
 
         # Fetch the existing record
-        query = select(CarTableSchema).where(CarTableSchema.id == id)
+        query = select(CarTableSchema).where(CarTableSchema.id == car_id)
         result = await db.execute(query)
         car_orm = result.scalar_one_or_none()
 
@@ -123,7 +122,7 @@ class CarService:
         if not car_orm:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Car with id {id} not found."
+                detail=f"Car with id {car_id} not found."
             )
 
         # Delete record
@@ -135,14 +134,14 @@ class CarService:
             await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Cannot delete car {id} due to database constraints."
+                detail=f"Cannot delete car {car_id} due to database constraints."
             )
 
         except Exception as e:
             await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error occurred while deleting car {id}."
+                detail=f"Unexpected error occurred while deleting car {car_id}."
             )
 
         return

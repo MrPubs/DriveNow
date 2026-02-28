@@ -1,12 +1,15 @@
 
 # Deps
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
+
+from app.services.rental_service import RentalService
+
 router = APIRouter(prefix="/rentals", tags=["Rentals"])
 
 # Models
 from uuid import UUID
 from app.models.validations.items import Rental, RentalUpdateReq
-from typing import List
+from app.models.validations.responses import GetAllRentalsResponse
 
 # Functionality
 from datetime import datetime
@@ -16,50 +19,39 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 
-# TODO: Remove!
-test = Rental(id=uuid4(),
-                    car_id=uuid4(),
-                    customer_name="Alice Johnson",
-                    start_date=datetime(2026, 2, 26, 16, 30),
-                    end_date=datetime(2026, 2, 28, 10, 0)
-)
-
 # GET ------------------
 # Get a rental by id
 @router.get("/{rental_id}", response_model=Rental, status_code=status.HTTP_200_OK)
-async def get_rental_by_id(rental_id: UUID):
+async def get_rental_by_id(rental_id: UUID,
+                           db: AsyncSession = Depends(get_db_session)):
 
-    rental = test
+    rental = await RentalService.get_one_by_id(db=db, rental_id=rental_id)
     return rental
 
-@router.get("/", response_model=List[Rental], status_code=status.HTTP_200_OK)
-async def get_all_rentals():
+@router.get("/", response_model=GetAllRentalsResponse, status_code=status.HTTP_200_OK)
+async def get_all_rentals(db: AsyncSession = Depends(get_db_session)):
 
-    rentals = [test]
-    return rentals
+    rentals = await RentalService.get_all(db=db)
+    return {"length": len(rentals),
+            "rentals": rentals
+            }
 
 
 # POST ------------------
 # Add a new rental
 @router.post("/", response_model=Rental, status_code=status.HTTP_201_CREATED)
-async def start_rental(rental: Rental):
+async def start_rental(rental: Rental,
+                       db: AsyncSession = Depends(get_db_session)):
 
-    rental = test
+    rental = await RentalService.add_one(db=db, rental=rental)
     return rental
-
-
-# PATCH ----------------
-# Update rental based on id
-@router.patch("/{rental_id}", response_model=Rental, status_code=status.HTTP_200_OK)
-async def update_rental_by_id(rental_id: UUID, update_req: RentalUpdateReq):
-
-    rental = test
-    return rental
-
 
 # DELETE --------------
 # Delete rental
 @router.delete("/{rental_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_rental_by_id(rental_id: UUID):
+async def delete_rental_by_id(rental_id: UUID,
+                              db: AsyncSession = Depends(get_db_session)):
+
+    await RentalService.delete_one_by_id(db=db, rental_id=rental_id)
     return None
 

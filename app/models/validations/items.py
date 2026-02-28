@@ -7,10 +7,11 @@ from uuid import UUID
 from datetime import datetime
 
 # Schemas
-from ..orm import CarTableSchema
+from ..orm import CarTableSchema, RentalTableSchema
+
 
 class RentalStatus(BaseModel):
-    status: Literal["available", "in use", "under maintenance"]
+    status: Literal["available", "in use", "under maintenance"] # TODO: Change to use the rental enum.
 class RentalStatusEnum(str, Enum):
     available = "available"
     in_use = "in use"
@@ -55,10 +56,10 @@ class Car(BaseModel):
             company=self.model.company,
             name=self.model.name,
             year=self.model.year,
-            status=self.status.status  # convert RentalStatus BaseModel to string
+            status=self.status.status
         )
 
-    def update_from_req(self, update_req: "CarUpdateReq") -> None:
+    def reconcile_req_diff(self, update_req: "CarUpdateReq") -> None:
         data = update_req.model_dump(exclude_unset=True)
 
         # Update the nested model if present
@@ -82,6 +83,36 @@ class Rental(BaseModel):
     customer_name: str
     start_date: datetime
     end_date: datetime
+
+    model_config = {
+        "from_attributes": True
+    }
+
+    @classmethod
+    def from_orm(cls, orm_obj: RentalTableSchema) -> "Rental":
+        """
+        Converts an ORM object to a nested Pydantic Rental model.
+        """
+        return cls.model_validate({
+            "id": orm_obj.id,
+            "car_id": orm_obj.car_id,
+            "customer_name": orm_obj.customer_name,
+            "start_date": orm_obj.start_date,
+            "end_date": orm_obj.end_date
+        })
+
+    def to_orm(self) -> RentalTableSchema:
+        """
+        Converts a nested Pydantic Rental model to an ORM object
+        """
+        return RentalTableSchema(
+            id=self.id,
+            car_id=self.car_id,
+            customer_name=self.customer_name,
+            start_date=self.start_date,
+            end_date=self.end_date
+        )
+
 RentalUpdateReq = create_model(
     'RentalUpdateReq',
     **{k: (Optional[v], None) for k, v in Rental.__annotations__.items() if k != "id"}
