@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-# wait for Postgres to be ready through docker orchestration
- 
-
 # run migrations
 alembic -c /app/alembic.ini upgrade head
 
