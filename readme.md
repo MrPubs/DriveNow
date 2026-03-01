@@ -1,7 +1,7 @@
 
 # DriveNow
 
-> A containerized car rental management API built with FastAPI, SQLAlchemy, and PostgreSQL.
+> A containerized car rental management API built with FastAPI, SQLAlchemy, and PostgreSQL, Prometheus, Testcontainers.
 
 ---
 
@@ -15,10 +15,10 @@
                │
                ▼
 ┌─────────────────────────────┐
-│       FastAPI Router        │  ── API Layer
+│             API             │  ── FastAPI Layer
 │                             │
 │  /cars  /rentals  /health   │
-│  /metrics                   │
+│  /metrics                   │ <<--------- Testcontainers [Interact with Ephemeral API, and Ephemeral Services]
 │                             │
 │  · Parameter validation     │
 │  · Request logging          │
@@ -35,9 +35,9 @@
                │
                ▼
 ┌─────────────────────────────┐
-│     Database Layer / ORM    │  ── SQLAlchemy AsyncSession
+│     Database Layer / ORM    │
 │                             │
-│  · Query execution          │
+│  · Query execution          │ --------->> Prometheus [Metric Loggic through time]
 │  · Schema-to-model mapping  │
 │  · ORM object resolution    │
 └──────────────┬──────────────┘
@@ -87,13 +87,22 @@ http://0.0.0.0:8000/docs
 
 ### 5. View logs
 
-Application logs are written to the API container at:
-
-```
-/containedapp/logs
-```
+Application logs are written to the logs volume.
 
 ---
+
+### 6. Run tests:
+
+From the DriveNow parent Directory run one time setup for venv:
+```commandline
+app\api\venv\Scripts\activate
+pip install app\api\requirements.txt
+```
+
+And to run actual tests
+```commandline
+python -m pytest -v tests/
+```
 
 ## Request Lifecycle
 
@@ -123,11 +132,13 @@ Client
 
 ## Tech Stack
 
-| Layer        | Technology                     |
-|--------------|-------------------------------|
-| API          | FastAPI + Uvicorn              |
-| ORM          | SQLAlchemy (async)             |
-| Migrations   | Alembic                        |
-| Database     | PostgreSQL                     |
-| Container    | Docker + Docker Compose        |
-| Runtime      | Python 3.12                    |
+| Layer         | Technology              |
+|---------------|-------------------------|
+| API           | FastAPI + Uvicorn       |
+| ORM           | SQLAlchemy (async)      |
+| Migrations    | Alembic                 |
+| Database      | PostgreSQL              |
+| Observability | Prometheus + Logging    |
+| Container     | Docker + Docker Compose |
+| Tests         | Testcontainers + Pytest |
+| Runtime       | Python 3.12             |

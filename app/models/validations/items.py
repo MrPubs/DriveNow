@@ -22,7 +22,7 @@ class CarModel(BaseModel):
     name: str
     year: int
 class Car(BaseModel):
-    id: UUID
+    id: Optional[UUID] = None
     model: CarModel
     status: RentalStatus
 
@@ -78,7 +78,7 @@ CarUpdateReq = create_model(
 
 # Rentals
 class Rental(BaseModel):
-    id: UUID
+    id: Optional[UUID] = None
     car_id: UUID
     customer_name: str
     start_date: datetime
