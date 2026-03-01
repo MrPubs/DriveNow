@@ -10,9 +10,6 @@ from ..models.orm import CarTableSchema, RentalTableSchema
 # Query
 from sqlalchemy import select, func
 
-# Logging
-from ..core.logger import logger
-
 class MetricService:
 
     @staticmethod
