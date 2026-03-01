@@ -1,7 +1,7 @@
 
 # API
 from fastapi import Request
-import time
+from time import perf_counter
 
 # Types
 from typing import List
@@ -15,15 +15,20 @@ REQUEST_LATENCY = Histogram(
     "API request latency in ms"
 )
 
-
 def track_latency_for_prefixes(app, prefixes: List[str]):
 
     @app.middleware("http")
     async def track_latency(request: Request, call_next):
-        if any(request.url.path.startswith(p) for p in prefixes):
-            start = time.time()
+
+        # get request path
+        route = request.scope.get("route")
+        route_path = getattr(route, "path", request.url.path)
+
+        # verify its a tracked path
+        if any(route_path.startswith(p) for p in prefixes):
+            start = perf_counter()
             response = await call_next(request)
-            duration = round((time.time() - start) * 1000, 2)
+            duration = (perf_counter() - start) * 1000
             REQUEST_LATENCY.observe(duration)
             return response
         else:
