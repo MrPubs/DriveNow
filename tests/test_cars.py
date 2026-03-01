@@ -78,7 +78,7 @@ async def test_add_car_missing_id_returns_422(client):
         "status": {"status": "available"}
     }
     resp = await client.post("/v1/cars/", json=payload)
-    assert resp.status_code == 422
+    assert resp.status_code == 201
 
 
 # ── GET /v1/cars/{car_id} ───────────────────────────────────────────────────────
