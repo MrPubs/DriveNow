@@ -26,7 +26,6 @@ dist/
 .eggs/
 
 # Docker
-*.dockerfile
 docker-compose.override.yml
 *.pid
 *.sock
