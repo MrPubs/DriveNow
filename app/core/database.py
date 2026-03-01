@@ -13,4 +13,5 @@ AsyncSessionLocal = sessionmaker(
 # Dependency for FastAPI endpoints
 async def get_db_session() -> AsyncSession:
     async with AsyncSessionLocal() as session:
-        yield session
+        async with session.begin():  # opens transaction, commits on success, rolls back on exception
+            yield session

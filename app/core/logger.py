@@ -3,10 +3,12 @@ from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
 from queue import Queue
 import sys
 from datetime import datetime
+import os
 
 # Timestamp
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 log_file = f"/containedapp/logs/drivenow_{timestamp}.log"
+os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
 # Queue to write in an atomic fashion
 log_queue = Queue(-1)

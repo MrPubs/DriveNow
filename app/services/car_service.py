@@ -65,16 +65,14 @@ class CarService:
         # Add record to session
         db.add(car_orm)
         try:
-            await db.commit() # Commit transaction
-            await db.refresh(car_orm) # Refresh to get any defaults from DB
-        except Exception:
-            # Rollback on error
-            await db.rollback()
-            logger.warning(f"Car with id {car.id} already exists.")
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Car with id {car.id} already exists."
-            )
+            await db.flush()  # this is where the IntegrityError will happen
+            await db.refresh(car_orm)
+        except IntegrityError as e:
+            # Check if it’s a primary key violation
+            if "duplicate key value violates unique constraint" in str(e.orig):
+                raise HTTPException(status_code=400, detail=f"Car with id {car.id} already exists")
+            raise  # re-raise other IntegrityErrors
+
         return car
 
     @staticmethod

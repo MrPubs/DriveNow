@@ -35,10 +35,11 @@ async def get_all_cars(status_filter: Optional[RentalStatusEnum] = Query(None, d
                        db: AsyncSession = Depends(get_db_session)):
 
     # Query db for all cars with filter using the car Service
-    logger.info(f"Fetching all Cars with status: {status_filter.value if status_filter else 'ANY'}")
+    status_filter_str = status_filter.value if status_filter else 'ANY'
+    logger.info(f"Fetching all Cars with status: {status_filter_str}")
     cars = await CarService.get_all(db=db, status_filter=status_filter)
     resp = {"length": len(cars),
-            "filter": status_filter,
+            "filter": status_filter_str,
             "cars":cars
             }
     logger.info(f"Found {resp['length']} Cars with Status: {status_filter.value if status_filter else 'ANY'}")

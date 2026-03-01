@@ -11,7 +11,7 @@ class GetAllRentalsResponse(BaseModel):
 # Car Responses
 class GetAllCarsResponse(BaseModel):
     length: int
-    filter: Optional[RentalStatusEnum] = None
+    filter: Optional[RentalStatusEnum] | Literal["ANY"] = "ANY"
     cars: List[Car]
 
 # Health Responses
