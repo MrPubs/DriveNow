@@ -54,7 +54,7 @@ async def start_rental(rental: Rental,
 
 # DELETE --------------
 # Delete rental
-@router.delete("/{rental_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{rental_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rental_by_id(rental_id: UUID,
                               db: AsyncSession = Depends(get_db_session)):
 

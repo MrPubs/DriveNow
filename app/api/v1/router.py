@@ -1,8 +1,8 @@
 
-# deps
+# API
 from fastapi import APIRouter
 
-# endpoints
+# Routing
 from .endpoints.cars import router as cars_router
 from .endpoints.rentals import router as rentals_router
 

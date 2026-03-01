@@ -1,6 +1,6 @@
 
 # Service
-from ..services.HealthService import HealthService
+from app.services.HealthService import HealthService
 
 # API Deps
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,17 +10,23 @@ router = APIRouter(prefix="/health", tags=["Health"])
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 
+# Observability
 from app.core.logger import logger
 
-@router.get("/health/ping")
-def ping():
-    return{'msg': "pong"}
+# Response
+from app.models.validations.responses import PingResp, DBHealthCheckResp
+
+@router.get("/ping", response_model=PingResp)
+async def ping():
+
+    resp = await HealthService.ping()
+    return {"msg": resp}
 
 
-@router.get("/health/db")
+@router.get("/db", response_model=DBHealthCheckResp)
 async def health_check(db: AsyncSession = Depends(get_db_session)):
 
     logger.info("Testing DB for connectivity.")
     resp = await HealthService.db_health(db=db)
     logger.info("Valid DB connection!")
-    return resp
+    return {"msg": resp}

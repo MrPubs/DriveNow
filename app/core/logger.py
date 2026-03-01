@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Timestamp
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_file = f"logs/drivenow_{timestamp}.log"
+log_file = f"/containedapp/logs/drivenow_{timestamp}.log"
 
 # Queue to write in an atomic fashion
 log_queue = Queue(-1)

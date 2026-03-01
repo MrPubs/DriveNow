@@ -15,14 +15,14 @@ from ..core.logger import logger
 class HealthService:
 
     @staticmethod
-    async def ping():
-        return{'msg': "pong"}
+    async def ping() -> str:
+        return "pong"
 
     @staticmethod
-    async def db_health(db: AsyncSession):
+    async def db_health(db: AsyncSession) -> str:
         try:
             await db.execute(text("SELECT 1"))
-            return {"status": "healthy"}
+            return "ok"
         except SQLAlchemyError:
             logger.error("DB cannot be reached!")
             raise HTTPException(

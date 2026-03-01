@@ -7,7 +7,7 @@ router = APIRouter(prefix="/cars", tags=["Cars"])
 from uuid import UUID
 from ....models.validations.items import Car, CarUpdateReq, RentalStatusEnum
 from ....models.validations.responses import GetAllCarsResponse
-from typing import List, Optional
+from typing import Optional
 
 # Functionality
 from ....services.car_service import CarService
@@ -71,7 +71,7 @@ async def update_car_by_id(car_id: UUID,
 
 # DELETE --------------
 # Delete existing car
-@router.delete("/{car_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{car_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_car_by_id(car_id: UUID,
                            db: AsyncSession = Depends(get_db_session)):
 
