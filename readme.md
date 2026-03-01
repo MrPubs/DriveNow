@@ -63,21 +63,15 @@ git clone https://github.com/MrPubs/DriveNow.git
 cd DriveNow
 ```
 
-### 2. Build Docker images
+### 2. Build Docker images and start
 
+Note that .env.default is the default .env and should be set
 ```bash
-docker compose build
+docker compose --env-file .env.default up --build
 ```
-
-### 3. Start containers
-
-```bash
-docker compose up -d
-```
-
 > Database migrations run automatically on container startup via Alembic. No manual steps required.
 
-### 4. Explore the API
+### 3. Explore the API
 
 Interactive Swagger UI is available at:
 
@@ -85,13 +79,13 @@ Interactive Swagger UI is available at:
 http://0.0.0.0:8000/docs
 ```
 
-### 5. View logs
+### 4. View logs
 
 Application logs are written to the logs volume.
 
 ---
 
-### 6. Run tests:
+### 5. Run tests:
 
 From the DriveNow parent Directory run one time setup for venv:
 ```commandline
