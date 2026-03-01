@@ -142,3 +142,5 @@ Client
 | Container     | Docker + Docker Compose |
 | Tests         | Testcontainers + Pytest |
 | Runtime       | Python 3.12             |
+
+Happy Renting!
